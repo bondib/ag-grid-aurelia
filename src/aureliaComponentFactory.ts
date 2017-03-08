@@ -18,6 +18,7 @@ export class AureliaComponentFactory {
             }
 
             getGui(): HTMLElement {
+                this.view.attached(); // trigger component life-cycle
                 return this.view.fragment as HTMLElement;
             }
 
