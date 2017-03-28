@@ -1,7 +1,9 @@
 // ag-grid-aurelia v8.1.0
-import { Container, ViewFactory } from "aurelia-framework";
+import { Container, ViewFactory, TaskQueue } from "aurelia-framework";
 import { ICellRendererComp, ICellEditorComp } from "ag-grid/main";
 export declare class AureliaComponentFactory {
+    private taskQueue;
+    constructor(taskQueue: TaskQueue);
     createRendererFromTemplate(container: Container, viewFactory: ViewFactory): {
         new (): ICellRendererComp;
     };

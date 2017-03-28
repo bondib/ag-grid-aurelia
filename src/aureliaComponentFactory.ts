@@ -1,25 +1,40 @@
-import {autoinject, Container, transient, View, ViewFactory} from "aurelia-framework";
+import { autoinject, Container, transient, View, ViewFactory, TaskQueue } from "aurelia-framework";
 
-import {ICellRendererComp, ICellEditorComp} from "ag-grid/main";
+import { ICellRendererComp, ICellEditorComp } from "ag-grid/main";
 
-import {IAureliaEditorViewModel} from "./editorViewModels";
+import { IAureliaEditorViewModel } from "./editorViewModels";
 
 @autoinject()
 @transient()
 export class AureliaComponentFactory {
-    public createRendererFromTemplate(container: Container, viewFactory: ViewFactory): {new(): ICellRendererComp} {
+
+    constructor(private taskQueue: TaskQueue) {
+
+    }
+
+    public createRendererFromTemplate(container: Container, viewFactory: ViewFactory): { new (): ICellRendererComp } {
+        let componentFactory = this;
         class CellRendererComponent implements ICellRendererComp {
             private view: View;
 
             init(params: any) {
-                let bindingContext = {params: params};
+                let bindingContext = { params: params };
                 this.view = viewFactory.create(container);
                 this.view.bind(bindingContext);
+                let controllers: any[] = (<any>this.view).controllers;
+                //initialize each controller
+                if (controllers && controllers.length) {
+                    controllers.forEach((c) => {
+                        c.viewModel.params = params;
+                    })
+                    //ICellRenderer doesn't have a guiAttached method so
+                    //we call attach on the queue;
+                    componentFactory.taskQueue.queueMicroTask(() => this.view.attached());
+                }
             }
 
-            getGui(): HTMLElement {
-                this.view.attached(); // trigger component life-cycle
-                return this.view.fragment as HTMLElement;
+            getGui(): HTMLElement {                
+                return this.view.fragment  as any;
             }
 
             destroy() {
@@ -31,7 +46,7 @@ export class AureliaComponentFactory {
         return CellRendererComponent;
     }
 
-    public createEditorFromTemplate(container: Container, viewFactory: ViewFactory): {new(): ICellEditorComp} {
+    public createEditorFromTemplate(container: Container, viewFactory: ViewFactory): { new (): ICellEditorComp } {
 
         class CellEditor implements ICellEditorComp {
 
@@ -40,11 +55,11 @@ export class AureliaComponentFactory {
 
 
             init(params: any): void {
-                let bindingContext = {params: params};
+                let bindingContext = { params: params };
                 this.view = viewFactory.create(container);
                 this.view.bind(bindingContext);
 
-                let controllers: any[] = (<any> this.view).controllers;
+                let controllers: any[] = (<any>this.view).controllers;
 
                 //only one controller is allowed in editor template
                 if (controllers &&
